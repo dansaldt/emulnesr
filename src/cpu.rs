@@ -82,6 +82,7 @@ impl CPU {
             let opcode = self.prog_read();
 
             match opcode {
+                /* LDA */
                 0xa9 => self.op_lda(&AddressingModes::Immediate),
                 0xa5 => self.op_lda(&AddressingModes::ZeroPage),
                 0xb5 => self.op_lda(&AddressingModes::ZeroPage_X),
@@ -90,8 +91,19 @@ impl CPU {
                 0xb9 => self.op_lda(&AddressingModes::Absolute_Y),
                 0xa1 => self.op_lda(&AddressingModes::Indirect_X),
                 0xb1 => self.op_lda(&AddressingModes::Indirect_Y),
+                /* STA */
+                0x85 => self.op_sta(&AddressingModes::ZeroPage),
+                0x95 => self.op_sta(&AddressingModes::ZeroPage_X), // todo to be tested
+                0x8d => self.op_sta(&AddressingModes::Absolute),
+                0x9d => self.op_sta(&AddressingModes::Absolute_X), // todo to be tested
+                0x99 => self.op_sta(&AddressingModes::Absolute_Y), // todo to be tested
+                0x81 => self.op_sta(&AddressingModes::Indirect_X), // todo to be tested
+                0x91 => self.op_sta(&AddressingModes::Indirect_Y), // todo to be tested
+                /* TAX */
                 0xaa => self.op_tax(),
+                /* INX */
                 0xe8 => self.op_inx(),
+                /* BRK */
                 0x00 => return, // set break flag omitted as there's no affect
                 _ => todo!()
             }
@@ -161,6 +173,11 @@ impl CPU {
         self.reg_a = value;
         self.flag_update_zero(self.reg_a);
         self.flag_update_negative(self.reg_a);
+    }
+
+    fn op_sta(&mut self, mode: &AddressingModes) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.reg_a);
     }
 
     fn op_tax(&mut self) {
@@ -246,6 +263,26 @@ mod test {
         cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
 
         assert_eq!(cpu.reg_a, 0x55);
+    }
+
+    #[test]
+    fn test_sta_zero_page() {
+        let mut cpu = CPU::new();
+
+        cpu.load_and_run(vec![0xa9, 0x02, 0x85, 0x01, 0x00]);
+
+        let x = cpu.mem_read(0x0001);
+        assert_eq!(x, 0x02);
+    }
+
+    #[test]
+    fn test_sta_absolute() {
+        let mut cpu = CPU::new();
+
+        cpu.load_and_run(vec![0xa9, 0x01, 0x8d, 0x00, 0x02, 0x00]);
+
+        let x = cpu.mem_read(0x0200);
+        assert_eq!(x, 0x01);
     }
 
 }
